@@ -38,7 +38,7 @@ class TransactionController extends Controller
                 'X-Reference-Id' => $this->referenceId,
                 'Content-Type' => 'application/json'
             ])->post("$this->baseUrl/v1_0/apiuser", [
-                "providerCallbackHost" => "gomapguide.com"
+                "providerCallbackHost" => "to.com"
             ]);
 
             // Create ApiKey

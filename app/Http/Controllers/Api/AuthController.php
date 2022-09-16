@@ -15,32 +15,30 @@ class AuthController extends Controller
     {
         $fields = $request->validate([
             'name' => 'required|string',
+            'type' => 'required|string',
             'phone' => 'required|string|unique:users,phone',
             'password' => 'required|min:8|confirmed'
         ]);
 
         $user = User::create([
             'name' => $fields['name'],
+            'type' => $fields['type'],
             'phone' => str_replace(' ', '', $fields['phone']),
             'password' => Hash::make($fields['password']),
         ]);
 
-        $reponse = $this->sendVerificationSms($user->phone);
 
-        if ($reponse->status() == 201) {
-            $code = json_decode($reponse->content())->data->code;
-            $user->update(['verif_code' => $code]);
-            $response = [
-                'status' => true,
-                'message' => 'Register successful!',
-                'data' => [
-                    'user' => $user,
-                ]
-            ];
-            return response($response, 201);
-        } else {
-            return $reponse;
-        }
+
+
+
+        $response = [
+            'status' => true,
+            'message' => 'Register successful!',
+            'data' => [
+                'user' => $user,
+            ]
+        ];
+        return response($response, 201);
     }
 
 
@@ -78,9 +76,21 @@ class AuthController extends Controller
     }
 
 
-    public function sendVerificationSms(string $phone)
+    public function sendVerificationSms(Request $request, string $phone)
     {
-        $code = random_int(100000, 999999);
+        $request->validate([
+            'reset_password' => 'required|boolean'
+        ]);
+
+        $user = User::where('phone', str_replace(' ', '', $phone))->first();
+        $code = random_int(1000, 9999);
+        if ($request->reset_password) {
+            $user->update(['verif_code' => $code]);
+        } elseif ($user) {
+            return response(['status' => false, 'message' => 'Your phone address already exist.'], 403);
+        }
+
+
         $basic  = new \Vonage\Client\Credentials\Basic(env('VONAGE_KEY'), env('VONAGE_SECRET'));
         $client = new \Vonage\Client($basic);
         $response = $client->sms()->send(
